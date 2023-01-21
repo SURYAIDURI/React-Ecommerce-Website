@@ -20,7 +20,6 @@ const Cart = (props) => {
     //     },
 
     //     {
-
     //         title: 'Black and white Colors',
 
     //         price: 50,
