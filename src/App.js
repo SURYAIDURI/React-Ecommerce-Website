@@ -1,126 +1,40 @@
-import { useState, useContext, useEffect } from "react";
-import { Redirect, Route, Switch } from "react-router-dom";
-import React, { Suspense } from "react";
-import Cart from "./Compontents/Cart/Cart";
-import Footer from "./Compontents/Layout/Footer";
-import Header from "./Compontents/Layout/Header";
-//import Cart from "./Compontents/Cart/Cart";
-//import Products from "./Compontents/Products/Products";
-//import Home from "./Compontents/Homee/Home";
-//import About from "./Compontents/About/About";
-import CartProvider from "./Compontents/Store/CartProvider";
-//import Contact from "./Compontents/Contact/Contact";
-import classes from "./Compontents/Layout/Header.module.css";
-import ProductDetail from "./Compontents/Products/ProductDetails";
-import AuthContext from "./Compontents/Store/AuthContext";
-import CartContext from "./Compontents/Store/cart-context";
-import axios from "axios";
-import LoadingSpinner from "./Compontents/UI/LoadingSpinner";
+import React, { useState } from 'react';
 
-const Home = React.lazy(() => import("./Compontents/Homee/Home"));
-const Contact = React.lazy(()=> import ("./Compontents/Contact/Contact"));
-const Products = React.lazy(()=> import ("./Compontents/Products/Products"));
-const About = React.lazy(()=> import ("./Compontents/About/About"));
-
+import MoviesList from './components/MoviesList';
+import './App.css';
 
 function App() {
-  const cartCtx = useContext(CartContext);
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  if (!localStorage.getItem("email")) {
-    localStorage.setItem("email", "");
+  async function fetchMoviesHandler() {
+    setIsLoading(true);
+    const response = await fetch('https://swapi.dev/api/films/');
+    const data = await response.json();
+
+    const transformedMovies = data.results.map((movieData) => {
+      return {
+        id: movieData.episode_id,
+        title: movieData.title,
+        openingText: movieData.opening_crawl,
+        releaseDate: movieData.release_date,
+      };
+    });
+    setMovies(transformedMovies);
+    setIsLoading(false);
   }
-  const authCtx = useContext(AuthContext);
-  let email = localStorage.getItem("email").replace(".", "").replace("@", "");
-
-  const [cartisShown, setCartIsShown] = useState(false);
-
-  const showCartHandler = () => {
-    setCartIsShown(true);
-  };
-
-  const hideCartHandler = () => {
-    setCartIsShown(false);
-  };
-  console.log(authCtx.isLoggedIn);
-  useEffect(() => {
-    if (!email) return;
-    axios
-      .get(
-        `https://crudcrud.com/api/faae72b079de4bd79023fcb94065ebe9/cart${email}`
-      )
-      .then((res) => {
-        const data = res.data;
-        for (const key in data) {
-          const item = data[key];
-          item._id = key;
-          cartCtx.mapID(item);
-        }
-      })
-      .catch((err) => {
-        alert(err);
-      });
-  }, [email, cartCtx]);
 
   return (
-    <CartProvider>
-      {cartisShown && <Cart onClose={hideCartHandler} />}
-
-      {authCtx.isLoggedIn && <Header onShowCart={showCartHandler} />}
-      <h1 className={classes.h1}> The Generics </h1>
-      <main>
-        <Suspense
-          fallback={
-            <div className="centered">
-              <LoadingSpinner />
-            </div>
-          }
-        >
-          <Switch>
-            {authCtx.isLoggedIn && (
-              <Route path="/" exact>
-                <Home />
-              </Route>
-            )}
-            <Route path="/" exact>
-              <AuthForm />
-            </Route>
-            {!authCtx.isLoggedIn && (
-              <Route path="/auth" exact>
-                <AuthForm />
-              </Route>
-            )}
-            {authCtx.isLoggedIn && (
-              <Route path="/store" exact>
-                <Products />
-              </Route>
-            )}
-
-            {authCtx.isLoggedIn && (
-              <Route path="/about">
-                <About />
-              </Route>
-            )}
-            {authCtx.isLoggedIn && (
-              <Route path="/" exact>
-                <Home />
-              </Route>
-            )}
-            <Route path="/contact_us">
-              <Contact />
-            </Route>
-
-            <Route path="/products/:product_id">
-              <ProductDetail />
-            </Route>
-
-            <Route path="*">
-              <Redirect to="/"></Redirect>
-            </Route>
-          </Switch>
-        </Suspense>
-      </main>
-      <Footer />
-    </CartProvider>
+    <React.Fragment>
+      <section>
+        <button onClick={fetchMoviesHandler}>Fetch Movies</button>
+      </section>
+      <section>
+        {!isLoading && movies.length > 0 && <MoviesList movies={movies} />}
+        {!isLoading && movies.length === 0 && <p>Found no movies.</p>}
+        {isLoading && <p>Loading...</p>}
+      </section>
+    </React.Fragment>
   );
 }
 
